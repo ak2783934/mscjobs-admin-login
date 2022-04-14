@@ -97,8 +97,8 @@ const JobPreview = () => {
               March 2022
             </div>
             <div className="py-1">
-              <span className="font-bold">Job Description: </span> Byju's BDA
-              APPLICATION - Sales (Read this before filling the form as you
+              <span className="font-bold">Job Description: </span> Byju&apos;s
+              BDA APPLICATION - Sales (Read this before filling the form as you
               might be questioned upon this) This is a Hybrid sales job for
               people who got the knack to get out of their comfort zone and want
               a 4x faster growth in terms of their career in terms of salary and
