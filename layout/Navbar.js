@@ -1,8 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { signout, isAuthenticated } from "../contexts/auth";
+import Router, { useRouter } from "next/router";
 
 function Navbar() {
   const [isLogin, setLogin] = useState(true);
+  const Router = useRouter();
+  useEffect(() => {
+    const isAuthenticate = isAuthenticated();
+    if (isAuthenticate) {
+      setLogin(true);
+    } else setLogin(false);
+  }, []);
+
+  const customSignout = () => {
+    signout((response) => {
+      if (response) {
+        alert("signed out!");
+      }
+    });
+  };
+
   return (
     <div className="h-[70px] flex flex-row justify-between	w-full bg-[#174378] px-[70px]">
       <div className="w-[100px]">
@@ -31,7 +49,7 @@ function Navbar() {
       )}
       {isLogin && (
         <div className="flex flex-row">
-          <Link href="/jobs">
+          <Link href="/post-job">
             <div className="px-1 mx-2 text-green-300 cursor-pointer my-auto border-2 border-green-600 h-[30px] py-auto rounded text-white">
               Post New Job
             </div>
@@ -46,18 +64,21 @@ function Navbar() {
               Notice
             </div>
           </Link>
-          <Link href="/contact">
-            <div className="px-2 mx-2 cursor-pointer my-auto h-[30px] py-auto rounded text-white">
-              Contact
-            </div>
-          </Link>
           <Link href="/profile">
             <div className="px-2 mx-2 cursor-pointer my-auto  h-[30px] py-auto rounded text-white">
               Profile
             </div>
           </Link>
+          <Link href="/contact">
+            <div className="px-2 mx-2 cursor-pointer my-auto  h-[30px] py-auto rounded text-white">
+              Contact
+            </div>
+          </Link>
           <Link href="/">
-            <div className="px-2 mx-2 cursor-pointer my-auto h-[30px] py-auto rounded text-white">
+            <div
+              onClick={customSignout}
+              className="px-2 mx-2 cursor-pointer my-auto h-[30px] py-auto rounded text-white"
+            >
               Logout
             </div>
           </Link>

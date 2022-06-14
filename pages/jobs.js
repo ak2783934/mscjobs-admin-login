@@ -1,28 +1,73 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "../layout";
 import Head from "next/head";
 import Link from "next/link";
+import Cookies from "js-cookie";
+import Router from "next/router";
+import { isAuthenticated } from "../contexts/auth";
+import { api } from "./api";
+import ReactLoading from "react-loading";
 
-const IndividualJob = () => {
+const IndividualJob = (job) => {
+  const { _id, companyName, jobRole, workExp, workLoc } = job.job;
   return (
-    <div className="w-auto h-20 m-1 cursor-pointer overflow-hidden bg-[#AEBAD2] md:h-40 md:m-4">
-      <div className="px-1 pt-1 font-semibold md:pb-1 md:px-4 md:pt-2 text-[0.55rem] md:text-lg">
-        Infodriven solutions Pvt Ltd.
+    <Link href={{ pathname: "/job-preview", query: job.job }}>
+      <div className="w-auto h-20 m-1 cursor-pointer overflow-hidden bg-[#AEBAD2] md:h-40 md:m-4">
+        <div className="px-1 pt-1 font-semibold md:pb-1 md:px-4 md:pt-2 text-[0.55rem] md:text-lg">
+          {companyName}
+        </div>
+        <div className="px-1 md:px-4 text-[#757171] text-[0.3rem] md:text-xs md:py-1">
+          {jobRole}
+        </div>
+        <div className="px-1 md:px-4 text-[0.4rem] md:text-sm font-semibold">
+          Experience : {workExp}
+        </div>
+        <div className="px-1 text-[0.4rem] md:px-4 md:pt-1 md:text-sm font-semibold">
+          Location : {workLoc}
+        </div>
       </div>
-      <div className="px-1 md:px-4 text-[#757171] text-[0.3rem] md:text-xs md:py-1">
-        Salesforce Developer
-      </div>
-      <div className="px-1 md:px-4 text-[0.4rem] md:text-sm font-semibold">
-        Experience : 3-10 Year
-      </div>
-      <div className="px-1 text-[0.4rem] md:px-4 md:pt-1 md:text-sm font-semibold">
-        Location : Bangaluru/ Banglore, Delhi
-      </div>
-    </div>
+    </Link>
   );
 };
 
-const jobs = () => {
+const Jobs = () => {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const isAuthenticate = isAuthenticated();
+    if (!isAuthenticate) {
+      Router.push("/");
+    }
+
+    const token = Cookies.get("token");
+    const userId = Cookies.get("userId");
+    api
+      .get(`/jobs/${userId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        // console.log(response);
+        setJobs(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.log(error.request);
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.log("Error", error.message);
+        }
+      });
+  }, []);
+
   return (
     <Layout>
       <Head>
@@ -52,14 +97,20 @@ const jobs = () => {
               <a>Post New Job</a>
             </Link>
           </div>
+          {loading && (
+            <ReactLoading
+              className="mx-auto"
+              type={"spinningBubbles"}
+              color="#008BF3"
+            />
+          )}
+          {jobs.length === 0 && (
+            <div className="py-3 text-center text-red-700">No Jobs Created</div>
+          )}
           <div className="h-[400px] overflow-auto grid grid-cols-2 gap-4">
-            <IndividualJob />
-            <IndividualJob />
-            <IndividualJob />
-            <IndividualJob />
-            <IndividualJob />
-            <IndividualJob />
-            <IndividualJob />
+            {jobs.map((job, index) => {
+              return <IndividualJob key={index} job={job} />;
+            })}
           </div>
         </div>
       </div>
@@ -67,4 +118,4 @@ const jobs = () => {
   );
 };
 
-export default jobs;
+export default Jobs;

@@ -1,9 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "../layout";
 import Head from "next/head";
 import Link from "next/link";
+import Router, { useRouter } from "next/router";
+import { isAuthenticated, signin } from "../contexts/auth";
+import { api } from "./api";
+import Cookies from "js-cookie";
+import ReactLoading from "react-loading";
 
-const ApplicationPreview = () => {
+const ApplicationPreview = ({ jobApplication }) => {
+  const [currJobApplication, setCurrJobApplication] = useState(jobApplication);
+  const handleOnChange = async (event) => {
+    var tempJobApplication = jobApplication;
+    tempJobApplication.status = event.target.value;
+    const token = Cookies.get("token");
+    const userId = Cookies.get("userId");
+    await api
+      .put(
+        `/jobapplication/${jobApplication._id}/${userId}`,
+        tempJobApplication,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response);
+        setCurrJobApplication({
+          ...currJobApplication,
+          status: tempJobApplication.status,
+        });
+        alert("application updated");
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.log(error.request);
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.log("Error", error.message);
+        }
+      });
+  };
   return (
     <div className="bg-[#B6B3B3] my-3 p-2 py-3 font-semibold rounded">
       <div className="flex flex-row">
@@ -12,16 +56,18 @@ const ApplicationPreview = () => {
           <div>Contact no. :</div>
           <div>Gender :</div>
           <div>Registered Mail Id :</div>
-          <div>Job Type : </div>
           <div>Resume : </div>
         </div>
         <div className="grow">
-          <div>Ayush Raj</div>
-          <div>9835932051</div>
-          <div>Male</div>
-          <div>xyz@gmail.com</div>
-          <div>Teaching / Non-Teaching Job</div>
-          <div>Attachment </div>
+          <div>{currJobApplication.nameOfCandidate}</div>
+          <div>{currJobApplication.contactNo}</div>
+          <div>{currJobApplication.gender}</div>
+          <div>{currJobApplication.emailId}</div>
+          <Link
+            href={`${process.env.NEXT_PUBLIC_BASE_URL}/fileinfo/${currJobApplication.resume}`}
+          >
+            Download
+          </Link>
         </div>
       </div>
 
@@ -30,6 +76,8 @@ const ApplicationPreview = () => {
           id="applicationStage"
           className="px-1 py-1 mx-auto rounded"
           name="applicationStage"
+          value={currJobApplication.status}
+          onChange={handleOnChange}
         >
           <option value="Fresh Application">Fresh Application</option>
           <option value="Under Consideration">Under Consideration</option>
@@ -42,6 +90,67 @@ const ApplicationPreview = () => {
 };
 
 const JobPreview = () => {
+  const [jobData, setJobData] = useState({});
+  const [jobApplications, setJobApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const Router = useRouter();
+  useEffect(() => {
+    const isAuthenticate = isAuthenticated();
+    if (!isAuthenticate) {
+      Router.push("/");
+      return;
+    }
+    const data = Router.query;
+    setJobData(data);
+    // console.log(data);
+    const token = Cookies.get("token");
+    const userId = Cookies.get("userId");
+    api
+      .get(`/jobapplications/${data._id}/${userId}`, {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        setJobApplications(response.data);
+        console.log(jobApplications);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+          setLoading(false);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.log(error.request);
+          setLoading(false);
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.log("Error", error.message);
+          setLoading(false);
+        }
+      });
+  }, []);
+
+  const {
+    _id,
+    companyName,
+    jobRole,
+    workExp,
+    jobType1,
+    jobType2,
+    lastDateOfApplication,
+    noOfOpenings,
+    user,
+    attachments,
+    additionalNotes,
+    isVerified,
+    workLoc,
+    jobDescription,
+  } = jobData;
   return (
     <Layout>
       <Head>
@@ -52,26 +161,30 @@ const JobPreview = () => {
       <div className="h-auto bg-[#008BF3] py-[70px]">
         <div className="w-[800px] bg-[#AEBAD2] mx-auto pb-4">
           <div className="flex flex-row justify-between px-4 pt-4">
-            <div className="text-[#008BF3]">
-              <span className="inline">
-                <img
-                  src="/leftarrow.svg"
-                  className="inline w-3 h-3 mr-1"
-                  alt="arrow"
-                />
-              </span>
-              <span className="inline">Back</span>
-            </div>
-            <div className="text-sm text-green-700">Verified</div>
+            <Link href="/jobs">
+              <div className="text-[#008BF3] cursor-pointer">
+                <span className="inline">
+                  <img
+                    src="/leftarrow.svg"
+                    className="inline w-3 h-3 mr-1"
+                    alt="arrow"
+                  />
+                </span>
+                <span className="inline">Back</span>
+              </div>
+            </Link>
+            {isVerified ? (
+              <div className="text-sm text-green-700">Verified</div>
+            ) : (
+              <div className="text-sm text-red-700">Not Verified</div>
+            )}
           </div>
-          <div className="text-xl text-center">
-            Infodriven solutions Pvt Ltd.
-          </div>
+          <div className="text-xl text-center">{companyName}</div>
           <div className="flex flex-row justify-between mx-4">
             <div className="px-5 py-auto bg-[#02BEFA] rounded-xl">
               <button>Update Job</button>
             </div>
-            <div className="text-sm text-gray-700">Salesforce Developer</div>
+            <div className="text-sm text-gray-700">{jobRole}</div>
             <div className="px-5 py-auto bg-[#02BEFA] rounded-xl">
               <button>Delete Job</button>
             </div>
@@ -79,51 +192,47 @@ const JobPreview = () => {
           <hr className="mx-4 my-2 border-t-2 border-black" />
           <div className="mx-4">
             <div className="py-1">
-              <span className="font-bold">Job Role:</span> BDA(Business
-              development Asscociate)
+              <span className="font-bold">Job Role:</span> {jobRole}
             </div>
             <div className="py-1">
-              <span className="font-bold">Location:</span> Remote
+              <span className="font-bold">Job Type:</span> {jobType1}/{jobType2}
             </div>
             <div className="py-1">
-              <span className="font-bold">Experience Req: </span> 3-4 years
+              <span className="font-bold">Location:</span> {workLoc}
+            </div>
+            <div className="py-1">
+              <span className="font-bold">Experience Req: </span> {workExp}
             </div>
 
             <div className="py-1">
-              <span className="font-bold">No. of Openings:</span> 30
+              <span className="font-bold">No. of Openings:</span> {noOfOpenings}
             </div>
             <div className="py-1">
-              <span className="font-bold">Last Date of application: </span> 30th
-              March 2022
+              <span className="font-bold">Last Date of application: </span>{" "}
+              {lastDateOfApplication}
             </div>
             <div className="py-1">
-              <span className="font-bold">Job Description: </span> Byju&apos;s
-              BDA APPLICATION - Sales (Read this before filling the form as you
-              might be questioned upon this) This is a Hybrid sales job for
-              people who got the knack to get out of their comfort zone and want
-              a 4x faster growth in terms of their career in terms of salary and
-              promotion IF you can Convince people in any given scenario, not to
-              sell a product but to create a need for the customer wherein they
-              are interested to know what you have to offer Identifying the
-              problem and using it as an opportunity to pitch your product
-              Getting insights from the customer and engaging with them to build
-              a successful rapport closing a sale on call as well as on the
-              field.
+              <span className="font-bold">Job Description: </span>{" "}
+              {jobDescription}
             </div>
             <div className="py-1">
-              <span className="font-bold">Additional Notes: </span>This job is
-              only for people who has completed their masters from tier 1
-              colleges of India. Others applying for this job will be reject.
-              Thanks!
+              <span className="font-bold">Additional Notes: </span>
+              {additionalNotes}
             </div>
-            <div className="py-1">
-              <span className="font-bold">Attachments:</span>{" "}
-              <img
-                src="/anchor-icon.svg"
-                alt="anchor"
-                className="inline w-4 h-4 mx-1 cursor-pointer"
-              />
-            </div>
+            {attachments && (
+              <div className="py-1">
+                <span className="font-bold">Attachments:</span>{" "}
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_BASE_URL}/fileinfo/${attachments}`}
+                >
+                  <img
+                    src="/anchor-icon.svg"
+                    alt="anchor"
+                    className="inline w-4 h-4 mx-1 cursor-pointer"
+                  />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -132,16 +241,28 @@ const JobPreview = () => {
             Job Application
           </div>
           <hr className="my-3 border-t-2 border-black" />
+          {loading && (
+            <ReactLoading
+              className="mx-auto"
+              type={"spinningBubbles"}
+              color="#008BF3"
+            />
+          )}
 
           <div className="overflow-auto px-2 h-[500px]">
-            <ApplicationPreview />
-            <ApplicationPreview />
-            <ApplicationPreview />
-            <ApplicationPreview />
-            <ApplicationPreview />
-            <ApplicationPreview />
-            <ApplicationPreview />
-            <ApplicationPreview />
+            {jobApplications.length == 0 && (
+              <div className="text-center text-red-700">
+                No job applications
+              </div>
+            )}
+            {jobApplications.map((jobApplication, index) => {
+              return (
+                <ApplicationPreview
+                  jobApplication={jobApplication}
+                  key={index}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
