@@ -96,9 +96,9 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="px-3 py-1 rounded-xl text-white w-[200px] mx-auto text-center bg-red-800">
+          {/* <div className="px-3 py-1 rounded-xl text-white w-[200px] mx-auto text-center bg-red-800">
             Edit Profile
-          </div>
+          </div> */}
         </div>
       </div>
     </Layout>
